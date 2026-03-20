@@ -1,270 +1,355 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import './UsersRolesPage.css';
 
+const BLANK_USER = {
+    firstName: '', lastName: '', email: '', password: '', roleId: '',
+    employeeCode: '', designation: '', gender: 'MALE', dateOfJoining: ''
+};
+
+const BLANK_ROLE = {
+    name: '', displayName: '', description: ''
+};
+
+const BLANK_MODULES = {
+    canAccessHms: true, canAccessAsset: true, canAccessInventory: true,
+    canAccessOt: true, canAccessPharmacy: true
+};
+
 export default function UsersRolesPage() {
+    const { id: urlHospitalId } = useParams();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('users');
 
-    // Roles State
+    // State
     const [roles, setRoles] = useState([]);
-    const [newRole, setNewRole] = useState({ name: '', displayName: '', canAccessHms: false, canAccessAsset: false, canAccessInventory: false, canAccessOt: false, canAccessPharmacy: false });
-    const [editingRoleId, setEditingRoleId] = useState(null);
-    const [loadingRoles, setLoadingRoles] = useState(false);
-
-    // Users State
     const [users, setUsers] = useState([]);
-    const [newUser, setNewUser] = useState({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        roleId: '',
-        employeeCode: '',
-        designation: '',
-        gender: 'MALE',
-        dateOfJoining: ''
-    });
-    const [loadingUsers, setLoadingUsers] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    // Modals
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [showRoleModal, setShowRoleModal] = useState(false);
+    const [showModuleModal, setShowModuleModal] = useState(false);
+
+    // Editing State
+    const [editingUser, setEditingUser] = useState(null);
+    const [editingRole, setEditingRole] = useState(null);
+    const [selectedUserForModules, setSelectedUserForModules] = useState(null);
+    const [moduleAccess, setModuleAccess] = useState(BLANK_MODULES);
+
+    const queryParams = urlHospitalId ? `?hospitalId=${urlHospitalId}` : '';
 
     useEffect(() => {
-        fetchRoles();
-        fetchUsers();
-    }, []);
+        fetchData();
+    }, [urlHospitalId]);
 
-    const fetchRoles = async () => {
-        setLoadingRoles(true);
+    const fetchData = async () => {
+        setLoading(true);
         try {
-            const res = await api.get('/api/admin/roles');
-            setRoles(res.data.data || []);
+            const [rRes, uRes] = await Promise.all([
+                api.get(`/api/admin/roles${queryParams}`),
+                api.get(`/api/admin/users${queryParams}`)
+            ]);
+            setRoles(rRes.data.data || []);
+            setUsers(uRes.data.data || []);
         } catch (error) {
-            console.error('Error fetching roles:', error);
+            console.error('Error fetching data:', error);
         } finally {
-            setLoadingRoles(false);
+            setLoading(false);
         }
     };
 
-    const fetchUsers = async () => {
-        setLoadingUsers(true);
+    const handleSaveUser = async (formData) => {
         try {
-            const res = await api.get('/api/admin/users');
-            setUsers(res.data.data || []);
+            if (editingUser) {
+                // await api.put(`/api/admin/users/${editingUser.id}${queryParams}`, formData);
+                alert('User update not fully implemented in backend yet, but UI is ready');
+            } else {
+                await api.post(`/api/admin/users${queryParams}`, formData);
+                alert('User created successfully');
+            }
+            setShowUserModal(false);
+            fetchData();
         } catch (error) {
-            console.error('Error fetching users:', error);
-        } finally {
-            setLoadingUsers(false);
+            alert(error.response?.data?.message || 'Error saving user');
         }
     };
 
-    const handleSaveRole = async (e) => {
-        e.preventDefault();
+    const handleSaveRole = async (formData) => {
         try {
-            if (editingRoleId) {
-                await api.put(`/api/admin/roles/${editingRoleId}`, newRole);
-                setEditingRoleId(null);
-                setNewRole({ name: '', displayName: '', canAccessHms: false, canAccessAsset: false, canAccessInventory: false, canAccessOt: false, canAccessPharmacy: false });
-                fetchRoles();
+            if (editingRole) {
+                await api.put(`/api/admin/roles/${editingRole.id}${queryParams}`, formData);
                 alert('Role updated successfully');
             } else {
-                await api.post('/api/admin/roles', newRole);
-                setNewRole({ name: '', displayName: '', canAccessHms: false, canAccessAsset: false, canAccessInventory: false, canAccessOt: false, canAccessPharmacy: false });
-                fetchRoles();
+                await api.post(`/api/admin/roles${queryParams}`, formData);
                 alert('Role created successfully');
             }
+            setShowRoleModal(false);
+            fetchData();
         } catch (error) {
             alert(error.response?.data?.message || 'Error saving role');
         }
     };
 
-    const startEditRole = (role) => {
-        setEditingRoleId(role.id);
-        setNewRole({
-            name: role.name || '',
-            displayName: role.displayName || '',
-            canAccessHms: role.canAccessHms || false,
-            canAccessAsset: role.canAccessAsset || false,
-            canAccessInventory: role.canAccessInventory || false,
-            canAccessOt: role.canAccessOt || false,
-            canAccessPharmacy: role.canAccessPharmacy || false
-        });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const cancelEditRole = () => {
-        setEditingRoleId(null);
-        setNewRole({ name: '', displayName: '', canAccessHms: false, canAccessAsset: false, canAccessInventory: false, canAccessOt: false, canAccessPharmacy: false });
-    };
-
-    const handleCreateUser = async (e) => {
+    const handleUpdateModules = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/api/admin/users', newUser);
-            setNewUser({
-                firstName: '',
-                lastName: '',
-                email: '',
-                password: '',
-                roleId: '',
-                employeeCode: '',
-                designation: '',
-                gender: 'MALE',
-                dateOfJoining: ''
-            });
-            fetchUsers();
-            alert('User created successfully');
+            await api.put(`/api/admin/users/${selectedUserForModules.id}/modules${queryParams}`, moduleAccess);
+            setShowModuleModal(false);
+            fetchData();
+            alert('User modules updated successfully');
         } catch (error) {
-            alert(error.response?.data?.message || 'Error creating user');
+            alert(error.response?.data?.message || 'Error updating modules');
         }
+    };
+
+    const openModuleModal = (user) => {
+        setSelectedUserForModules(user);
+        setModuleAccess({
+            canAccessHms: user.canAccessHms ?? true,
+            canAccessAsset: user.canAccessAsset ?? true,
+            canAccessInventory: user.canAccessInventory ?? true,
+            canAccessOt: user.canAccessOt ?? true,
+            canAccessPharmacy: user.canAccessPharmacy ?? true
+        });
+        setShowModuleModal(true);
     };
 
     return (
         <div className="users-roles-page">
-            <h1 style={{ marginBottom: '20px' }}>User & Role Management</h1>
-
-            <main className="main-content">
-                <div className="tabs">
-                    <button className={`tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>Users</button>
-                    <button className={`tab ${activeTab === 'roles' ? 'active' : ''}`} onClick={() => setActiveTab('roles')}>Roles</button>
-                </div>
-
-                {activeTab === 'users' && (
-                    <div className="tab-pane">
-                        <h2>Add User</h2>
-                        <form className="admin-form" onSubmit={handleCreateUser}>
-                            <div className="form-group">
-                                <label>First Name</label>
-                                <input required type="text" value={newUser.firstName} onChange={e => setNewUser({ ...newUser, firstName: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Last Name</label>
-                                <input required type="text" value={newUser.lastName} onChange={e => setNewUser({ ...newUser, lastName: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Email</label>
-                                <input required type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Password</label>
-                                <input required type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Employee Code</label>
-                                <input type="text" value={newUser.employeeCode} onChange={e => setNewUser({ ...newUser, employeeCode: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Designation</label>
-                                <input type="text" value={newUser.designation} onChange={e => setNewUser({ ...newUser, designation: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Gender</label>
-                                <select value={newUser.gender} onChange={e => setNewUser({ ...newUser, gender: e.target.value })}>
-                                    <option value="MALE">Male</option>
-                                    <option value="FEMALE">Female</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label>Date of Joining</label>
-                                <input type="date" value={newUser.dateOfJoining} onChange={e => setNewUser({ ...newUser, dateOfJoining: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Role</label>
-                                <select required value={newUser.roleId} onChange={e => setNewUser({ ...newUser, roleId: e.target.value })}>
-                                    <option value="">Select Role</option>
-                                    {roles?.map(r => (
-                                        <option key={r.id} value={r.id}>{r.displayName}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <button type="submit" className="btn-primary">Create User</button>
-                        </form>
-
-                        <h3>Existing Users</h3>
-                        {loadingUsers ? <p>Loading...</p> : (
-                            <table className="admin-table">
-                                <thead><tr><th>Name</th><th>Email</th><th>Code</th><th>Role</th></tr></thead>
-                                <tbody>
-                                    {users?.map(u => (
-                                        <tr key={u.id}>
-                                            <td>{u.firstName} {u.lastName}</td>
-                                            <td>{u.email}</td>
-                                            <td>{u.employeeCode}</td>
-                                            <td>{u.role?.displayName}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
+            <div className="page-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {urlHospitalId && (
+                        <button className="btn-secondary" onClick={() => navigate(`/hospitals/${urlHospitalId}`)} style={{ padding: '0.5rem', minWidth: 0 }}>
+                            ←
+                        </button>
+                    )}
+                    <div>
+                        <h1 className="page-title">Users & Roles</h1>
+                        <p className="page-sub">Manage staff accounts and custom permissions.</p>
                     </div>
-                )}
+                </div>
+                <div className="page-actions">
+                    {activeTab === 'users' ? (
+                        <button className="btn-primary" onClick={() => { setEditingUser(null); setShowUserModal(true); }}>
+                            + Add User
+                        </button>
+                    ) : (
+                        <button className="btn-primary" onClick={() => { setEditingRole(null); setShowRoleModal(true); }}>
+                            + Add Role
+                        </button>
+                    )}
+                </div>
+            </div>
 
-                {activeTab === 'roles' && (
-                    <div className="tab-pane">
-                        <h2>{editingRoleId ? 'Edit Role' : 'Create Role'}</h2>
-                        <form className="admin-form" onSubmit={handleSaveRole}>
-                            <div className="form-group">
-                                <label>Internal Name (e.g. ward_nurse)</label>
-                                <input required type="text" value={newRole.name} onChange={e => setNewRole({ ...newRole, name: e.target.value })} disabled={editingRoleId !== null} />
-                            </div>
-                            <div className="form-group">
-                                <label>Display Name (e.g. Ward Nurse)</label>
-                                <input required type="text" value={newRole.displayName} onChange={e => setNewRole({ ...newRole, displayName: e.target.value })} />
-                            </div>
+            <div className="tabs-container">
+                <button className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>Users</button>
+                <button className={`tab-btn ${activeTab === 'roles' ? 'active' : ''}`} onClick={() => setActiveTab('roles')}>Roles</button>
+            </div>
 
-                            <h3>Module Access</h3>
-                            <div className="module-checkboxes">
-                                <label><input type="checkbox" checked={newRole.canAccessHms} onChange={e => setNewRole({ ...newRole, canAccessHms: e.target.checked })} /> HMS</label>
-                                <label><input type="checkbox" checked={newRole.canAccessAsset} onChange={e => setNewRole({ ...newRole, canAccessAsset: e.target.checked })} /> Asset</label>
-                                <label><input type="checkbox" checked={newRole.canAccessInventory} onChange={e => setNewRole({ ...newRole, canAccessInventory: e.target.checked })} /> Inventory</label>
-                                <label><input type="checkbox" checked={newRole.canAccessOt} onChange={e => setNewRole({ ...newRole, canAccessOt: e.target.checked })} /> OT</label>
-                                <label><input type="checkbox" checked={newRole.canAccessPharmacy} onChange={e => setNewRole({ ...newRole, canAccessPharmacy: e.target.checked })} /> Pharmacy</label>
-                            </div>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <button type="submit" className="btn-primary mt-4">{editingRoleId ? 'Save Changes' : 'Create Role'}</button>
-                                {editingRoleId && (
-                                    <button type="button" className="btn-secondary mt-4" style={{ backgroundColor: '#6c757d', color: 'white', padding: '10px 15px', borderRadius: '4px', border: 'none', cursor: 'pointer' }} onClick={cancelEditRole}>Cancel</button>
-                                )}
-                            </div>
-                        </form>
-
-                        <h3>Existing Roles</h3>
-                        {loadingRoles ? <p>Loading...</p> : (
+            {loading ? (
+                <div className="loading-state">Loading data...</div>
+            ) : (
+                <main className="content-area">
+                    {activeTab === 'users' ? (
+                        <div className="table-container">
                             <table className="admin-table">
                                 <thead>
                                     <tr>
+                                        <th>User Info</th>
+                                        <th>Employee Code</th>
+                                        <th>Designation</th>
                                         <th>Role</th>
-                                        <th>HMS</th>
-                                        <th>Asset</th>
-                                        <th>Inventory</th>
-                                        <th>OT</th>
-                                        <th>Pharmacy</th>
+                                        <th>Access</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {roles?.map(r => (
-                                        <tr key={r.id}>
-                                            <td>{r.displayName}</td>
-                                            <td>{r.canAccessHms ? '✅' : '❌'}</td>
-                                            <td>{r.canAccessAsset ? '✅' : '❌'}</td>
-                                            <td>{r.canAccessInventory ? '✅' : '❌'}</td>
-                                            <td>{r.canAccessOt ? '✅' : '❌'}</td>
-                                            <td>{r.canAccessPharmacy ? '✅' : '❌'}</td>
+                                    {users.map(u => (
+                                        <tr key={u.id}>
                                             <td>
-                                                <button
-                                                    onClick={() => startEditRole(r)}
-                                                    style={{ backgroundColor: '#007bff', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
-                                                >
-                                                    Edit
+                                                <div className="user-info">
+                                                    <span className="user-name">{u.firstName} {u.lastName}</span>
+                                                    <span className="user-email">{u.email}</span>
+                                                </div>
+                                            </td>
+                                            <td>{u.employeeCode || '—'}</td>
+                                            <td>{u.designation || '—'}</td>
+                                            <td><span className="role-tag">{u.role?.displayName}</span></td>
+                                            <td>
+                                                <button className="btn-icon-link" onClick={() => openModuleModal(u)}>
+                                                    Manage Modules
                                                 </button>
+                                            </td>
+                                            <td>
+                                                <button className="btn-icon-link" onClick={() => { setEditingUser(u); setShowUserModal(true); }}>Edit</button>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
-                        )}
+                        </div>
+                    ) : (
+                        <div className="table-container">
+                            <table className="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Role Name</th>
+                                        <th>Description</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {roles.map(r => (
+                                        <tr key={r.id}>
+                                            <td className="user-name">{r.displayName}</td>
+                                            <td>{r.description || '—'}</td>
+                                            <td>
+                                                <button className="btn-icon-link" onClick={() => { setEditingRole(r); setShowRoleModal(true); }}>Edit</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </main>
+            )}
+
+            {/* Modals */}
+            {showUserModal && (
+                <UserFormModal 
+                    initialData={editingUser || BLANK_USER} 
+                    roles={roles} 
+                    onClose={() => setShowUserModal(false)} 
+                    onSave={handleSaveUser} 
+                />
+            )}
+
+            {showRoleModal && (
+                <RoleFormModal 
+                    initialData={editingRole || BLANK_ROLE} 
+                    onClose={() => setShowRoleModal(false)} 
+                    onSave={handleSaveRole} 
+                />
+            )}
+
+            {showModuleModal && (
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowModuleModal(false)}>
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h3 className="modal-title">Module Access: {selectedUserForModules?.firstName}</h3>
+                            <button className="close-btn" onClick={() => setShowModuleModal(false)}>×</button>
+                        </div>
+                        <form onSubmit={handleUpdateModules}>
+                            <div className="modal-body">
+                                <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1.5rem' }}>
+                                    Override default role permissions for this specific user.
+                                </p>
+                                <div className="module-access-grid">
+                                    <Checkbox label="HMS Module" checked={moduleAccess.canAccessHms} onChange={val => setModuleAccess({ ...moduleAccess, canAccessHms: val })} />
+                                    <Checkbox label="Asset Manager" checked={moduleAccess.canAccessAsset} onChange={val => setModuleAccess({ ...moduleAccess, canAccessAsset: val })} />
+                                    <Checkbox label="Inventory" checked={moduleAccess.canAccessInventory} onChange={val => setModuleAccess({ ...moduleAccess, canAccessInventory: val })} />
+                                    <Checkbox label="OT Module" checked={moduleAccess.canAccessOt} onChange={val => setModuleAccess({ ...moduleAccess, canAccessOt: val })} />
+                                    <Checkbox label="Pharmacy" checked={moduleAccess.canAccessPharmacy} onChange={val => setModuleAccess({ ...moduleAccess, canAccessPharmacy: val })} />
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn-secondary" onClick={() => setShowModuleModal(false)}>Cancel</button>
+                                <button type="submit" className="btn-primary">Save Access</button>
+                            </div>
+                        </form>
                     </div>
-                )}
-            </main>
+                </div>
+            )}
         </div>
+    );
+}
+
+/* ── Modal Components ── */
+
+function UserFormModal({ initialData, roles, onClose, onSave }) {
+    const [form, setForm] = useState(initialData);
+    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+    return (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="modal-content">
+                <div className="modal-header">
+                    <h3 className="modal-title">{initialData.id ? 'Edit User' : 'Add New User'}</h3>
+                    <button className="close-btn" onClick={onClose}>×</button>
+                </div>
+                <form onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+                    <div className="modal-body">
+                        <div className="form-grid">
+                            <div className="form-group"><label className="form-label">First Name</label><input className="form-input" name="firstName" value={form.firstName} onChange={handleChange} required /></div>
+                            <div className="form-group"><label className="form-label">Last Name</label><input className="form-input" name="lastName" value={form.lastName} onChange={handleChange} required /></div>
+                            <div className="form-group full"><label className="form-label">Email Address</label><input className="form-input" type="email" name="email" value={form.email} onChange={handleChange} required /></div>
+                            {!initialData.id && <div className="form-group full"><label className="form-label">Password</label><input className="form-input" type="password" name="password" value={form.password} onChange={handleChange} required /></div>}
+                            <div className="form-group"><label className="form-label">Employee Code</label><input className="form-input" name="employeeCode" value={form.employeeCode} onChange={handleChange} /></div>
+                            <div className="form-group"><label className="form-label">Designation</label><input className="form-input" name="designation" value={form.designation} onChange={handleChange} /></div>
+                            <div className="form-group">
+                                <label className="form-label">Role</label>
+                                <select className="form-input" name="roleId" value={form.roleId} onChange={handleChange} required>
+                                    <option value="">Select Role</option>
+                                    {roles.map(r => <option key={r.id} value={r.id}>{r.displayName}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Gender</label>
+                                <select className="form-input" name="gender" value={form.gender} onChange={handleChange}>
+                                    <option value="MALE">Male</option>
+                                    <option value="FEMALE">Female</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-footer">
+                        <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+                        <button type="submit" className="btn-primary">{initialData.id ? 'Update User' : 'Create User'}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+function RoleFormModal({ initialData, onClose, onSave }) {
+    const [form, setForm] = useState(initialData);
+    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+    return (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="modal-content">
+                <div className="modal-header">
+                    <h3 className="modal-title">{initialData.id ? 'Edit Role' : 'Create Custom Role'}</h3>
+                    <button className="close-btn" onClick={onClose}>×</button>
+                </div>
+                <form onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+                    <div className="modal-body">
+                        <div className="form-grid">
+                            <div className="form-group full"><label className="form-label">Internal Name (e.g. ward_nurse)</label><input className="form-input" name="name" value={form.name} onChange={handleChange} disabled={!!initialData.id} required /></div>
+                            <div className="form-group full"><label className="form-label">Display Name (e.g. Ward Nurse)</label><input className="form-input" name="displayName" value={form.displayName} onChange={handleChange} required /></div>
+                            <div className="form-group full"><label className="form-label">Description</label><textarea className="form-input" name="description" value={form.description} onChange={handleChange} rows="2" /></div>
+                        </div>
+                    </div>
+                    <div className="modal-footer">
+                        <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+                        <button type="submit" className="btn-primary">{initialData.id ? 'Save Changes' : 'Create Role'}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+function Checkbox({ label, checked, onChange }) {
+    return (
+        <label className="checkbox-label">
+            <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
+            {label}
+        </label>
     );
 }

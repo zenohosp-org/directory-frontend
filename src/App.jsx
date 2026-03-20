@@ -117,6 +117,11 @@ export default function App() {
 
             {/* Users & Roles Management */}
             <Route path="/users" element={<UsersRolesPage />} />
+            <Route path="/hospitals/:id/users-roles" element={
+                <ProtectedRoute roles={['super_admin']}>
+                  <UsersRolesPage />
+                </ProtectedRoute>
+            } />
 
             {/* Module not activated */}
             <Route path="/module-not-activated" element={<ModuleNotActivated />} />

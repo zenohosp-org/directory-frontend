@@ -5,12 +5,12 @@ import './Sidebar.css';
 const SUPER_ADMIN_NAV = [
     { to: '/dashboard', icon: '⊞', label: 'Dashboard' },
     { to: '/hospitals', icon: '🏥', label: 'Hospitals' },
-    { to: '/modules', icon: '⬡', label: 'Modules' },
+    { to: '/users', icon: '🛡️', label: 'Roles' },
 ];
 
 const HOSPITAL_ADMIN_NAV = [
     { to: '/dashboard', icon: '⊞', label: 'Dashboard' },
-    { to: '/users', icon: '👥', label: 'Users' },
+    { to: '/users', icon: '👥', label: 'Users & Roles' },
 ];
 
 const DOCTOR_STAFF_NAV = [

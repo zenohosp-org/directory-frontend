@@ -133,6 +133,16 @@ export default function HospitalDetailPage() {
                             Assign Admin
                         </button>
                     </div>
+
+                    <div className="admin-card" style={{ marginTop: 15 }}>
+                        <div className="admin-card__info">
+                            <div className="admin-card__title">Users & Roles</div>
+                            <p className="admin-card__desc">Manage doctors, staff, and custom roles for this hospital.</p>
+                        </div>
+                        <button className="btn-primary" onClick={() => navigate(`/hospitals/${id}/users-roles`)}>
+                            Manage Users & Roles
+                        </button>
+                    </div>
                 </div>
             </div>
 
