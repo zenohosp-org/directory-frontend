@@ -23,9 +23,10 @@ export function AuthProvider({ children }) {
             res = await apiAdminLogin({ email, password });
         }
         const userData = res.data.data;
-        sessionStorage.setItem('zeno_user', JSON.stringify(userData));
-        setUser(userData);
-        return userData;
+        const { token, ...userWithoutToken } = userData || {};
+        sessionStorage.setItem('zeno_user', JSON.stringify(userWithoutToken));
+        setUser(userWithoutToken);
+        return userWithoutToken;
     }, []);
 
     const doLogout = useCallback(async () => {

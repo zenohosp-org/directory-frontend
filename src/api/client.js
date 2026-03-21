@@ -5,20 +5,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// ── Request interceptor: attach JWT from sessionStorage on every call ──
-api.interceptors.request.use((config) => {
-  try {
-    const stored = sessionStorage.getItem('zeno_user');
-    if (stored) {
-      const user = JSON.parse(stored);
-      if (user?.token) {
-        config.headers['Authorization'] = `Bearer ${user.token}`;
-      }
-    }
-  } catch (_) { }
-  return config;
-});
-
 // ── Auth ──
 export const login = (data) => api.post('/api/auth/login', data);
 export const adminLogin = (data) => api.post('/api/auth/admin/login', data);

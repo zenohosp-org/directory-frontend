@@ -104,7 +104,9 @@ export default function LoginPage() {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || 'Google Auth failed');
 
-                sessionStorage.setItem('zeno_user', JSON.stringify(data.data.user || data.data));
+                const userData = data.data.user || data.data;
+                const { token, ...userWithoutToken } = userData || {};
+                sessionStorage.setItem('zeno_user', JSON.stringify(userWithoutToken));
                 window.location.href = '/dashboard';
             } catch (err) {
                 setError(err.message);
