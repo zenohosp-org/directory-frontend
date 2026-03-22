@@ -16,7 +16,7 @@ const normalizeApiBaseUrl = (rawUrl) => {
   }
 };
 
-export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL);
+export const API_BASE_URL = 'https://api-directory.zenohosp.com';
 
 const api = axios.create({
   baseURL: 'https://api-directory.zenohosp.com',
