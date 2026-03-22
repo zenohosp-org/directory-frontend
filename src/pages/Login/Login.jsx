@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL, googleLogin } from '../../api/client';
 import './Login.css';
 
 export default function LoginPage() {
@@ -37,7 +38,7 @@ export default function LoginPage() {
             // Standard form submission to the backend endpoint for SSO
             const formObj = document.createElement('form');
             formObj.method = 'POST';
-            formObj.action = '/oauth2/login';
+            formObj.action = `${API_BASE_URL}/oauth2/login`;
 
             const addField = (name, value) => {
                 const input = document.createElement('input');
@@ -76,7 +77,7 @@ export default function LoginPage() {
         if (isSSO) {
             const formObj = document.createElement('form');
             formObj.method = 'POST';
-            formObj.action = '/oauth2/google';
+            formObj.action = `${API_BASE_URL}/oauth2/google`;
 
             const addField = (name, value) => {
                 const input = document.createElement('input');
@@ -96,20 +97,15 @@ export default function LoginPage() {
         } else {
             // Basic fallback for direct Google login
             try {
-                const res = await fetch('/api/auth/google', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken: credentialResponse.credential })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message || 'Google Auth failed');
+                const res = await googleLogin({ idToken: credentialResponse.credential });
+                const data = res.data;
 
                 const userData = data.data.user || data.data;
                 const { token, ...userWithoutToken } = userData || {};
                 sessionStorage.setItem('zeno_user', JSON.stringify(userWithoutToken));
                 window.location.href = '/dashboard';
             } catch (err) {
-                setError(err.message);
+                setError(err?.response?.data?.message || err.message || 'Google Auth failed');
                 setLoading(false);
             }
         }

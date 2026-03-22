@@ -1,13 +1,32 @@
 import axios from 'axios';
 
+const normalizeApiBaseUrl = (rawUrl) => {
+  const trimmed = rawUrl?.trim();
+  if (!trimmed) return 'https://api-directory.zenohosp.com';
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.hostname === 'directory.zenohosp.com') {
+      parsed.hostname = 'api-directory.zenohosp.com';
+      return parsed.toString().replace(/\/$/, '');
+    }
+    return trimmed.replace(/\/$/, '');
+  } catch {
+    return 'https://api-directory.zenohosp.com';
+  }
+};
+
+export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL);
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'https://api-directory.zenohosp.com',
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
 // ── Auth ──
 export const login = (data) => api.post('/api/auth/login', data);
 export const adminLogin = (data) => api.post('/api/auth/admin/login', data);
+export const googleLogin = (data) => api.post('/api/auth/google', data);
 export const logout = () => api.post('/api/auth/logout');
 
 // ── Directory (public) ──
