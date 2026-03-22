@@ -41,10 +41,53 @@ api.interceptors.response.use((res) => {
 });
 
 // ── Auth ──
-export const login = (data) => api.post('/api/auth/login', data);
-export const adminLogin = (data) => api.post('/api/auth/admin/login', data);
-export const googleLogin = (data) => api.post('/api/auth/google', data);
-export const logout = () => api.post('/api/auth/logout');
+export const login = async (data) => {
+  console.log('Auth.login.request', data);
+  try {
+    const res = await api.post('/api/auth/login', data);
+    console.log('Auth.login.response', { url: res.config?.url, status: res.status, data: res.data });
+    return res;
+  } catch (err) {
+    console.log('Auth.login.error', err?.response?.status, err?.response?.data || err.message);
+    throw err;
+  }
+};
+
+export const adminLogin = async (data) => {
+  console.log('Auth.adminLogin.request', data);
+  try {
+    const res = await api.post('/api/auth/admin/login', data);
+    console.log('Auth.adminLogin.response', { url: res.config?.url, status: res.status, data: res.data });
+    return res;
+  } catch (err) {
+    console.log('Auth.adminLogin.error', err?.response?.status, err?.response?.data || err.message);
+    throw err;
+  }
+};
+
+export const googleLogin = async (data) => {
+  console.log('Auth.googleLogin.request', data);
+  try {
+    const res = await api.post('/api/auth/google', data);
+    console.log('Auth.googleLogin.response', { url: res.config?.url, status: res.status, data: res.data });
+    return res;
+  } catch (err) {
+    console.log('Auth.googleLogin.error', err?.response?.status, err?.response?.data || err.message);
+    throw err;
+  }
+};
+
+export const logout = async () => {
+  console.log('Auth.logout.request');
+  try {
+    const res = await api.post('/api/auth/logout');
+    console.log('Auth.logout.response', { url: res.config?.url, status: res.status, data: res.data });
+    return res;
+  } catch (err) {
+    console.log('Auth.logout.error', err?.response?.status, err?.response?.data || err.message);
+    throw err;
+  }
+};
 
 // ── Directory (public) ──
 export const getHospitals = () => api.get('/api/directory/hospitals');
