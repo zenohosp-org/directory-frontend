@@ -30,6 +30,7 @@ export default function LoginPage() {
         setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
     const handleSubmit = async (e) => {
+        console.log(`handling submit ${API_BASE_URL}`)
         e.preventDefault();
         setError('');
         setLoading(true);
