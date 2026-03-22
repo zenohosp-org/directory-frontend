@@ -36,7 +36,6 @@ export default function LoginPage() {
         setLoading(true);
         console.log('Login.handleSubmit:start', { isSSO, email: form.email });
         if (isSSO) {
-        if (isSSO) {
             // Standard form submission to the backend endpoint for SSO
             const formObj = document.createElement('form');
             formObj.method = 'POST';
@@ -55,8 +54,6 @@ export default function LoginPage() {
             addField('client_id', clientId);
             addField('redirect_uri', redirectUri);
             console.log('Login.handleSubmit:submitting SSO form', { action: '/oauth2/login', clientId, redirectUri });
-            document.body.appendChild(formObj);
-            formObj.submit();
             document.body.appendChild(formObj);
             formObj.submit();
         } else {
@@ -146,12 +143,9 @@ export default function LoginPage() {
                             className="form-input"
                             placeholder="you@example.com"
                             value={form.email}
-                    console.log('Login.handleSubmit:direct login response', res.data);
-                    const userData = res.data.data;
-                    sessionStorage.setItem('zeno_user', JSON.stringify(userData));
-                    setUser(userData);
-                    console.log('Login.handleSubmit:direct login success', { userId: userData?.userId });
-                    return userData;
+                            onChange={handleChange}
+                        />
+                    </div>
                     <div className="form-group">
                         <label htmlFor="password" className="form-label">Password</label>
                         <input
