@@ -23,6 +23,23 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Debug: log outgoing requests and responses to trace login flow
+api.interceptors.request.use((config) => {
+  console.log('API.request', { method: config.method, url: config.url, data: config.data });
+  return config;
+}, (err) => {
+  console.log('API.request.error', err);
+  return Promise.reject(err);
+});
+
+api.interceptors.response.use((res) => {
+  console.log('API.response', { url: res.config?.url, status: res.status, data: res.data });
+  return res;
+}, (err) => {
+  console.log('API.response.error', err?.response?.status, err?.response?.data || err.message);
+  return Promise.reject(err);
+});
+
 // ── Auth ──
 export const login = (data) => api.post('/api/auth/login', data);
 export const adminLogin = (data) => api.post('/api/auth/admin/login', data);

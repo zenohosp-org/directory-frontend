@@ -14,6 +14,7 @@ export function AuthProvider({ children }) {
     });
 
     const doLogin = useCallback(async (email, password) => {
+        console.log('Auth.doLogin:start', { email });
         // Try regular hospital login first; if that fails try super admin login
         let res;
         try {
@@ -22,17 +23,21 @@ export function AuthProvider({ children }) {
             // If regular login fails, try the super-admin endpoint
             res = await apiAdminLogin({ email, password });
         }
+        console.log('Auth.doLogin:response', res?.data);
         const userData = res.data.data;
         const { token, ...userWithoutToken } = userData || {};
         sessionStorage.setItem('zeno_user', JSON.stringify(userWithoutToken));
         setUser(userWithoutToken);
+        console.log('Auth.doLogin:success', { userId: userWithoutToken?.userId });
         return userWithoutToken;
     }, []);
 
     const doLogout = useCallback(async () => {
-        try { await apiLogout(); } catch (_) { }
+        console.log('Auth.doLogout:start');
+        try { await apiLogout(); console.log('Auth.doLogout:apiLogout:ok'); } catch (e) { console.log('Auth.doLogout:apiLogout:error', e); }
         sessionStorage.removeItem('zeno_user');
         setUser(null);
+        console.log('Auth.doLogout:done');
     }, []);
 
     const isSuperAdmin = user?.role?.toLowerCase() === 'super_admin';
