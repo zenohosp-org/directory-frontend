@@ -25,16 +25,18 @@ const defaultApiBaseUrl =
 
 export const API_BASE_URL = normalizeApiBaseUrl(envApiBaseUrl || defaultApiBaseUrl);
 
+const buildApiUrl = (path) => new URL(path, `${API_BASE_URL}/`).toString();
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
 // ── Auth ──
-export const login = (data) => api.post('/api/auth/login', data);
-export const adminLogin = (data) => api.post('/api/auth/admin/login', data);
-export const googleLogin = (data) => api.post('/api/auth/google', data);
-export const logout = () => api.post('/api/auth/logout');
+export const login = (data) => api.post(buildApiUrl('/api/auth/login'), data);
+export const adminLogin = (data) => api.post(buildApiUrl('/api/auth/admin/login'), data);
+export const googleLogin = (data) => api.post(buildApiUrl('/api/auth/google'), data);
+export const logout = () => api.post(buildApiUrl('/api/auth/logout'));
 
 // ── Directory (public) ──
 export const getHospitals = () => api.get('/api/directory/hospitals');
