@@ -25,18 +25,39 @@ const defaultApiBaseUrl =
 
 export const API_BASE_URL = normalizeApiBaseUrl(envApiBaseUrl || defaultApiBaseUrl);
 
-const buildApiUrl = (path) => new URL(path, `${API_BASE_URL}/`).toString();
-
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
+// Log API configuration for debugging
+if (typeof window !== 'undefined') {
+  window.__ZENOHOSP_API_BASE__ = API_BASE_URL;
+  console.log('[ZenoHosp] API Base URL:', API_BASE_URL);
+}
+
+// Intercept errors to handle JSON parse failures gracefully
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      const status = error.response.status;
+      const url = error.config?.url || 'unknown';
+      console.error(`[ZenoHosp] ${status} ${url}`, {
+        statusText: error.response.statusText,
+        contentType: error.response.headers['content-type'],
+        body: typeof error.response.data === 'string' ? error.response.data.slice(0, 200) : error.response.data,
+      });
+    }
+    return Promise.reject(error);
+  }
+);
+
 // ── Auth ──
-export const login = (data) => api.post(buildApiUrl('/api/auth/login'), data);
-export const adminLogin = (data) => api.post(buildApiUrl('/api/auth/admin/login'), data);
-export const googleLogin = (data) => api.post(buildApiUrl('/api/auth/google'), data);
-export const logout = () => api.post(buildApiUrl('/api/auth/logout'));
+export const login = (data) => api.post('/api/auth/login', data);
+export const adminLogin = (data) => api.post('/api/auth/admin/login', data);
+export const googleLogin = (data) => api.post('/api/auth/google', data);
+export const logout = () => api.post('/api/auth/logout');
 
 // ── Directory (public) ──
 export const getHospitals = () => api.get('/api/directory/hospitals');

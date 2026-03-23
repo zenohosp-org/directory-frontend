@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL, googleLogin } from '../../api/client';
+import ApiDebugBar from '../../components/ApiDebugBar';
 import './Login.css';
 
 export default function LoginPage() {
@@ -96,7 +97,15 @@ export default function LoginPage() {
                 sessionStorage.setItem('zeno_user', JSON.stringify(userWithoutToken));
                 window.location.href = '/dashboard';
             } catch (err) {
-                setError(err?.response?.data?.message || err.message || 'Google Auth failed');
+                let errorMsg = 'Google Auth failed';
+                if (err?.response?.status === 404) {
+                    errorMsg = 'API endpoint not found. Check backend connection.';
+                } else if (err?.response?.data?.message) {
+                    errorMsg = err.response.data.message;
+                } else if (err?.message) {
+                    errorMsg = err.message;
+                }
+                setError(errorMsg);
                 setLoading(false);
             }
         }
@@ -104,6 +113,7 @@ export default function LoginPage() {
 
     return (
         <div className="login-page">
+            <ApiDebugBar />
             <div className="login-card">
                 {/* Brand */}
                 <div className="login-brand">
