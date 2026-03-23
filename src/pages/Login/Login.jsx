@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
@@ -11,7 +11,7 @@ export default function LoginPage() {
     const [searchParams] = useSearchParams();
 
     const [form, setForm] = useState({ email: '', password: '' });
-    const [error, setError] = useState('');
+    const [error, setError] = useState(() => searchParams.get('error') || '');
     const [loading, setLoading] = useState(false);
 
     // OAuth SSO Parameters
@@ -20,21 +20,13 @@ export default function LoginPage() {
     const redirectUri = searchParams.get('redirect_uri');
     const state = searchParams.get('state');
 
-    useEffect(() => {
-        if (searchParams.has('error')) {
-            setError(searchParams.get('error'));
-        }
-    }, [searchParams]);
-
     const handleChange = (e) =>
         setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
     const handleSubmit = async (e) => {
-        console.log(`handling submit ${API_BASE_URL}`)
         e.preventDefault();
         setError('');
         setLoading(true);
-        console.log('Login.handleSubmit:start', { isSSO, email: form.email });
         if (isSSO) {
             // Standard form submission to the backend endpoint for SSO
             const formObj = document.createElement('form');
@@ -53,13 +45,12 @@ export default function LoginPage() {
             addField('password', form.password);
             addField('client_id', clientId);
             addField('redirect_uri', redirectUri);
-            console.log('Login.handleSubmit:submitting SSO form', { action: '/oauth2/login', clientId, redirectUri });
             document.body.appendChild(formObj);
             formObj.submit();
         } else {
             // Standard Direct Login
             try {
-                const user = await doLogin(form.email, form.password);
+                await doLogin(form.email, form.password);
                 navigate('/dashboard');
             } catch (err) {
                 setError(
@@ -101,7 +92,7 @@ export default function LoginPage() {
                 const data = res.data;
 
                 const userData = data.data.user || data.data;
-                const { token, ...userWithoutToken } = userData || {};
+                const { token: _TOKEN, ...userWithoutToken } = userData || {};
                 sessionStorage.setItem('zeno_user', JSON.stringify(userWithoutToken));
                 window.location.href = '/dashboard';
             } catch (err) {
