@@ -30,8 +30,8 @@ const api = axios.create({
 });
 
 // ── Auth ──
-export const login = (data) => api.post('/api/auth/login', data);
-export const adminLogin = (data) => api.post('/api/auth/admin/login', data);
+export const login = (data) => api.post('https://api-directory.zenohosp.com/api/auth/login', data);
+export const adminLogin = (data) => api.post('https://api-directory.zenohosp.com/api/auth/admin/login', data);
 export const googleLogin = (data) => api.post('/api/auth/google', data);
 export const logout = () => api.post('/api/auth/logout');
 
