@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-import { login as apiLogin, adminLogin as apiAdminLogin, logout as apiLogout } from '../api/client';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { login as apiLogin, adminLogin as apiAdminLogin, getMe, logout as apiLogout } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -12,6 +12,27 @@ export function AuthProvider({ children }) {
             return null;
         }
     });
+    const [loading, setLoading] = useState(!user); // if user exists, don't need to load
+
+    // Restore session from backend on mount (cookie-based auth)
+    useEffect(() => {
+        if (!user && loading) {
+            getMe()
+                .then(res => {
+                    const userData = res.data.data || res.data;
+                    sessionStorage.setItem('zeno_user', JSON.stringify(userData));
+                    setUser(userData);
+                })
+                .catch(() => {
+                    // No valid session/cookie
+                    sessionStorage.removeItem('zeno_user');
+                    setUser(null);
+                })
+                .finally(() => setLoading(false));
+        } else {
+            setLoading(false);
+        }
+    }, []);
 
     const doLogin = useCallback(async (email, password) => {
         // Try regular hospital login first; if that fails try super admin login
@@ -27,10 +48,9 @@ export function AuthProvider({ children }) {
             res = await apiAdminLogin({ email, password });
         }
         const userData = res.data.data;
-        const { token: _TOKEN, ...userWithoutToken } = userData || {};
-        sessionStorage.setItem('zeno_user', JSON.stringify(userWithoutToken));
-        setUser(userWithoutToken);
-        return userWithoutToken;
+        sessionStorage.setItem('zeno_user', JSON.stringify(userData));
+        setUser(userData);
+        return userData;
     }, []);
 
     const doLogout = useCallback(async () => {
@@ -45,7 +65,7 @@ export function AuthProvider({ children }) {
     const isStaff = user?.role?.toLowerCase() === 'staff';
 
     return (
-        <AuthContext.Provider value={{ user, isSuperAdmin, isHospitalAdmin, isDoctor, isStaff, doLogin, doLogout }}>
+        <AuthContext.Provider value={{ user, loading, isSuperAdmin, isHospitalAdmin, isDoctor, isStaff, doLogin, doLogout }}>
             {children}
         </AuthContext.Provider>
     );

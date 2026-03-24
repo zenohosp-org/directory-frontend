@@ -11,6 +11,7 @@ const api = axios.create({
 export const login = (data) => api.post('/api/auth/login', data);
 export const adminLogin = (data) => api.post('/api/auth/admin/login', data);
 export const googleLogin = (data) => api.post('/api/auth/google', data);
+export const getMe = () => api.get('/api/auth/me');
 export const logout = () => api.post('/api/auth/logout');
 
 // ── Directory (public) ──

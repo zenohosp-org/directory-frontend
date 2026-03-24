@@ -4,9 +4,18 @@ import { useAuth } from '../context/AuthContext';
 /**
  * Redirects unauthenticated users to /login.
  * If `roles` is provided, also enforces role-based access.
+ * Shows loading screen while session is being restored.
  */
 export function ProtectedRoute({ children, roles }) {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
+
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <div>Loading...</div>
+            </div>
+        );
+    }
 
     if (!user) return <Navigate to="/login" replace />;
 
@@ -19,9 +28,19 @@ export function ProtectedRoute({ children, roles }) {
 
 /**
  * Redirects authenticated users away from /login.
+ * Shows loading screen while session is being restored.
  */
 export function GuestRoute({ children }) {
-    const { user, isSuperAdmin } = useAuth();
+    const { user, loading } = useAuth();
+    
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <div>Loading...</div>
+            </div>
+        );
+    }
+
     if (user) return <Navigate to="/dashboard" replace />;
     return children;
 }
