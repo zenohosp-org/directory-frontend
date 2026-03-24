@@ -6,7 +6,7 @@
     },
     {
       "source": "/oauth2/(.*)",
-      "destination": "https://api-directory.zenohosp.com/oauth2/$1"
+      "destination": "https://api-directory.zenohosp.com/oauth2/$1"  
     }
   ]
 }
