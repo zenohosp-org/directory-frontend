@@ -54,7 +54,7 @@ export default function UsersRolesPage() {
             setRoles(rRes.data.data || []);
             setUsers(uRes.data.data || []);
         } catch (error) {
-            console.error('Error fetching data:', error);
+            setError('Failed to load users and roles');
         } finally {
             setLoading(false);
         }
@@ -63,8 +63,10 @@ export default function UsersRolesPage() {
     const handleSaveUser = async (formData) => {
         try {
             if (editingUser) {
+                // TODO: Enable user update when backend endpoint is implemented
                 // await api.put(`/api/admin/users/${editingUser.id}${queryParams}`, formData);
-                alert('User update not fully implemented in backend yet, but UI is ready');
+                alert('User update functionality is not yet available. Coming soon!');
+                return;
             } else {
                 await api.post(`/api/admin/users${queryParams}`, formData);
                 alert('User created successfully');

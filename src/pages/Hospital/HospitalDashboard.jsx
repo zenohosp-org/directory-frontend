@@ -22,20 +22,14 @@ export default function HospitalDashboard() {
         if (user?.hospitalId) {
             setLoading(true);
             Promise.all([
-                getActiveModules(user.hospitalId).catch(err => {
-                    console.error("getActiveModules failed", err);
-                    throw err;
-                }),
-                getAllModules().catch(err => {
-                    console.error("getAllModules failed", err);
-                    throw err;
-                })
+                getActiveModules(user.hospitalId),
+                getAllModules()
             ])
                 .then(([activeRes, allRes]) => {
                     setHospitalModules(activeRes.data.data ?? []);
                     setAllModules(allRes.data.data ?? []);
                 })
-                .catch(err => console.error("Dashboard primary load failed", err.response?.status, err.message))
+                .catch(err => setError('Failed to load modules'))
                 .finally(() => setLoading(false));
         }
     }, [user?.hospitalId]);

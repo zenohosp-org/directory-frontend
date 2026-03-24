@@ -3,8 +3,26 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL, googleLogin } from '../../api/client';
-import ApiDebugBar from '../../components/ApiDebugBar';
+// import ApiDebugBar from '../../components/ApiDebugBar';
 import './Login.css';
+
+// Helper to create and submit form for OAuth flow
+const submitOAuth2Form = (action, fields) => {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = action;
+
+    Object.entries(fields).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value || '';
+        form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+};
 
 export default function LoginPage() {
     const { doLogin } = useAuth();
@@ -29,25 +47,12 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
         if (isSSO) {
-            // Standard form submission to the backend endpoint for SSO
-            const formObj = document.createElement('form');
-            formObj.method = 'POST';
-            formObj.action = `${API_BASE_URL}/oauth2/login`;
-
-            const addField = (name, value) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = name;
-                input.value = value || '';
-                formObj.appendChild(input);
-            };
-
-            addField('email', form.email);
-            addField('password', form.password);
-            addField('client_id', clientId);
-            addField('redirect_uri', redirectUri);
-            document.body.appendChild(formObj);
-            formObj.submit();
+            submitOAuth2Form(`${API_BASE_URL}/oauth2/login`, {
+                email: form.email,
+                password: form.password,
+                client_id: clientId,
+                redirect_uri: redirectUri,
+            });
         } else {
             // Standard Direct Login
             try {
@@ -67,27 +72,14 @@ export default function LoginPage() {
         setError('');
 
         if (isSSO) {
-            const formObj = document.createElement('form');
-            formObj.method = 'POST';
-            formObj.action = `${API_BASE_URL}/oauth2/google`;
-
-            const addField = (name, value) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = name;
-                input.value = value || '';
-                formObj.appendChild(input);
-            };
-
-            addField('idToken', credentialResponse.credential);
-            addField('client_id', clientId);
-            addField('redirect_uri', redirectUri);
-            addField('state', state);
-
-            document.body.appendChild(formObj);
-            formObj.submit();
+            submitOAuth2Form(`${API_BASE_URL}/oauth2/google`, {
+                idToken: credentialResponse.credential,
+                client_id: clientId,
+                redirect_uri: redirectUri,
+                state: state || '',
+            });
         } else {
-            // Basic fallback for direct Google login
+            // Direct Google login
             try {
                 const res = await googleLogin({ idToken: credentialResponse.credential });
                 const data = res.data;
@@ -97,7 +89,7 @@ export default function LoginPage() {
                 sessionStorage.setItem('zeno_user', JSON.stringify(userWithoutToken));
                 window.location.href = '/dashboard';
             } catch (err) {
-                let errorMsg = 'Google Auth failed';
+                let errorMsg = 'Google authentication failed';
                 if (err?.response?.status === 404) {
                     errorMsg = 'API endpoint not found. Check backend connection.';
                 } else if (err?.response?.data?.message) {
@@ -113,7 +105,7 @@ export default function LoginPage() {
 
     return (
         <div className="login-page">
-            <ApiDebugBar />
+            {/* <ApiDebugBar /> */}
             <div className="login-card">
                 {/* Brand */}
                 <div className="login-brand">
