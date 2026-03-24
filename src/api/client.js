@@ -24,7 +24,7 @@ const defaultApiBaseUrl =
     : 'https://api-directory.zenohosp.com';
 
 export const API_BASE_URL = normalizeApiBaseUrl(envApiBaseUrl || defaultApiBaseUrl);
-
+console.log(API_BASE_URL + "api base url")
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
