@@ -34,6 +34,27 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
+    // When the window/tab regains focus, verify session with backend.
+    // This detects logouts performed in other apps (cross-subdomain) where
+    // the server-side cookie may have been cleared.
+    useEffect(() => {
+        const verifyOnFocus = async () => {
+            if (!user) return;
+            try {
+                await getMe();
+                // still valid — nothing to do
+            } catch (err) {
+                // Session invalidated on server; clear local state and redirect to login
+                sessionStorage.removeItem('zeno_user');
+                setUser(null);
+                window.location.href = '/login?logged_out=1';
+            }
+        };
+
+        window.addEventListener('focus', verifyOnFocus);
+        return () => window.removeEventListener('focus', verifyOnFocus);
+    }, [user]);
+
     const doLogin = useCallback(async (email, password) => {
         // Try regular hospital login first; if that fails try super admin login
         let res;
