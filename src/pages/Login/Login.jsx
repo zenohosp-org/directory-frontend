@@ -52,6 +52,7 @@ export default function LoginPage() {
                 password: form.password,
                 client_id: clientId,
                 redirect_uri: redirectUri,
+                state: state || '',
             });
         } else {
             // Standard Direct Login
