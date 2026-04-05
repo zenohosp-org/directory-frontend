@@ -82,15 +82,7 @@ export function AuthProvider({ children }) {
         setUser(null);
         console.log('✅ Local state cleared');
         
-        // WAIT for logout API call to complete before redirecting
-        try {
-            await apiLogout();
-            console.log('✅ Backend logout completed');
-        } catch (e) {
-            console.warn('Directory logout endpoint failed:', e);
-        }
-        
-        // Signal to other tabs
+        // Signal to other tabs FIRST
         try {
             localStorage.setItem('sso-logout', `${Date.now()}`);
             window.dispatchEvent(new Event('sso-logout'));
@@ -98,6 +90,18 @@ export function AuthProvider({ children }) {
         } catch (e) {
             console.warn('Failed to broadcast logout:', e);
         }
+        
+        // Call logout endpoint and wait for completion
+        try {
+            await apiLogout();
+            console.log('✅ Backend logout completed');
+        } catch (e) {
+            console.warn('Directory logout endpoint failed:', e);
+            // Continue with redirect even if API fails
+        }
+        
+        // Wait a moment for browser to process Set-Cookie headers
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Force full page reload (NOT React Router navigation)
         console.log('🔄 Full page reload to login');
