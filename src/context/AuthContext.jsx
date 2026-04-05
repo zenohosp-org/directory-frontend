@@ -75,9 +75,33 @@ export function AuthProvider({ children }) {
     }, []);
 
     const doLogout = useCallback(async () => {
-        await apiLogout().catch(() => null);
+        console.log('🔴 Logout initiated');
+        
+        // Clear local state immediately
         sessionStorage.removeItem('zeno_user');
         setUser(null);
+        console.log('✅ Local state cleared');
+        
+        // WAIT for logout API call to complete before redirecting
+        try {
+            await apiLogout();
+            console.log('✅ Backend logout completed');
+        } catch (e) {
+            console.warn('Directory logout endpoint failed:', e);
+        }
+        
+        // Signal to other tabs
+        try {
+            localStorage.setItem('sso-logout', `${Date.now()}`);
+            window.dispatchEvent(new Event('sso-logout'));
+            console.log('✅ Logout signal broadcast');
+        } catch (e) {
+            console.warn('Failed to broadcast logout:', e);
+        }
+        
+        // Force full page reload (NOT React Router navigation)
+        console.log('🔄 Full page reload to login');
+        window.location.href = '/login?logged_out=1';
     }, []);
 
     const isSuperAdmin = user?.role?.toLowerCase() === 'super_admin';
@@ -86,7 +110,7 @@ export function AuthProvider({ children }) {
     const isStaff = user?.role?.toLowerCase() === 'staff';
 
     return (
-        <AuthContext.Provider value={{ user, loading, isSuperAdmin, isHospitalAdmin, isDoctor, isStaff, doLogin, doLogout }}>
+        <AuthContext.Provider value={{ user, loading, isSuperAdmin, isHospitalAdmin, isDoctor, isStaff, doLogin, doLogout, logout: doLogout }}>
             {children}
         </AuthContext.Provider>
     );
