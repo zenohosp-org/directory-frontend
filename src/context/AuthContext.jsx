@@ -110,26 +110,34 @@ export function AuthProvider({ children }) {
     }, []);
 
     const logout = useCallback(async () => {
+        console.log('🔴 Logout triggered');
+        
         try {
             await apiLogout();
         } catch (error) {
-            // Continue logout even if API call fails
             console.error('Logout API failed:', error);
         }
+        
+        // Clear local state immediately
         sessionStorage.removeItem('zeno_user');
         setUser(null);
+        console.log('✅ User state cleared');
         
         // Signal logout across all tabs/windows and apps
         try {
             const signal = `logout-${Date.now()}`;
             localStorage.setItem('sso-logout', signal);
+            console.log('✅ Logout signal broadcast');
         } catch (e) {
             console.warn('Failed to signal logout', e);
         }
         window.dispatchEvent(new Event('sso-logout'));
         
         // Redirect to login
-        window.location.href = '/login?logged_out=1';
+        console.log('🔄 Redirecting to /login');
+        setTimeout(() => {
+            window.location.href = '/login?logged_out=1';
+        }, 100);
     }, []);
 
     const isSuperAdmin = user?.role?.toLowerCase() === 'super_admin';
