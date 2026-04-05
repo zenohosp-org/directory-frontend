@@ -55,6 +55,41 @@ export function AuthProvider({ children }) {
         return () => window.removeEventListener('focus', verifyOnFocus);
     }, [user]);
 
+    // Listen for logout signals from other tabs/windows/apps
+    useEffect(() => {
+        const handleStorageChange = (event) => {
+            if (event.key === 'sso-logout') {
+                // Another app initiated SSO logout
+                sessionStorage.removeItem('zeno_user');
+                setUser(null);
+                const path = window.location.pathname;
+                const isAuthFlowPath = path === '/login' || path === '/sso/callback' || path === '/login/oauth2/code/directory';
+                if (!isAuthFlowPath) {
+                    window.location.href = '/login?logged_out=1';
+                }
+            }
+        };
+
+        const handleCustomLogoutEvent = (event) => {
+            // Handle custom logout event (same-tab communication)
+            sessionStorage.removeItem('zeno_user');
+            setUser(null);
+            const path = window.location.pathname;
+            const isAuthFlowPath = path === '/login' || path === '/sso/callback' || path === '/login/oauth2/code/directory';
+            if (!isAuthFlowPath) {
+                window.location.href = '/login?logged_out=1';
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('sso-logout', handleCustomLogoutEvent);
+        
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('sso-logout', handleCustomLogoutEvent);
+        };
+    }, []);
+
     const doLogin = useCallback(async (email, password) => {
         // Try regular hospital login first; if that fails try super admin login
         let res;
@@ -74,10 +109,27 @@ export function AuthProvider({ children }) {
         return userData;
     }, []);
 
-    const doLogout = useCallback(async () => {
-        await apiLogout().catch(() => null);
+    const logout = useCallback(async () => {
+        try {
+            await apiLogout();
+        } catch (error) {
+            // Continue logout even if API call fails
+            console.error('Logout API failed:', error);
+        }
         sessionStorage.removeItem('zeno_user');
         setUser(null);
+        
+        // Signal logout across all tabs/windows and apps
+        try {
+            const signal = `logout-${Date.now()}`;
+            sessionStorage.setItem('sso-logout', signal);
+        } catch (e) {
+            console.warn('Failed to signal logout', e);
+        }
+        window.dispatchEvent(new Event('sso-logout'));
+        
+        // Redirect to login
+        window.location.href = '/login?logged_out=1';
     }, []);
 
     const isSuperAdmin = user?.role?.toLowerCase() === 'super_admin';
@@ -86,7 +138,7 @@ export function AuthProvider({ children }) {
     const isStaff = user?.role?.toLowerCase() === 'staff';
 
     return (
-        <AuthContext.Provider value={{ user, loading, isSuperAdmin, isHospitalAdmin, isDoctor, isStaff, doLogin, doLogout }}>
+        <AuthContext.Provider value={{ user, loading, isSuperAdmin, isHospitalAdmin, isDoctor, isStaff, doLogin, logout }}>
             {children}
         </AuthContext.Provider>
     );

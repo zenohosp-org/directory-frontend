@@ -27,7 +27,7 @@ const MODULE_NAV_MAP = {
 };
 
 export default function Sidebar({ activeModules = [] }) {
-    const { user, isSuperAdmin, isHospitalAdmin, doLogout } = useAuth();
+    const { user, isSuperAdmin, isHospitalAdmin, logout } = useAuth();
     const navigate = useNavigate();
 
     let baseNav = isSuperAdmin
@@ -49,8 +49,7 @@ export default function Sidebar({ activeModules = [] }) {
     const navItems = [...baseNav, ...moduleNav];
 
     const handleLogout = async () => {
-        await doLogout();
-        navigate('/login');
+        logout();
     };
 
     return (
