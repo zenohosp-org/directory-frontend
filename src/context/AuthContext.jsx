@@ -122,7 +122,7 @@ export function AuthProvider({ children }) {
         // Signal logout across all tabs/windows and apps
         try {
             const signal = `logout-${Date.now()}`;
-            sessionStorage.setItem('sso-logout', signal);
+            localStorage.setItem('sso-logout', signal);
         } catch (e) {
             console.warn('Failed to signal logout', e);
         }
