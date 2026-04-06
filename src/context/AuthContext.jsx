@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import { login as apiLogin, adminLogin as apiAdminLogin, getMe, logout as apiLogout } from '../api/client';
 
 const AuthContext = createContext(null);
-
+const LOGOUT_FLAG_KEY = 'sso_logout_flag';
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(() => {
         try {
@@ -14,25 +14,28 @@ export function AuthProvider({ children }) {
     });
     const [loading, setLoading] = useState(!user); // if user exists, don't need to load
 
-    // Restore session from backend on mount (cookie-based auth)
     useEffect(() => {
-        if (!user && loading) {
-            getMe()
-                .then(res => {
-                    const userData = res.data.data || res.data;
-                    sessionStorage.setItem('zeno_user', JSON.stringify(userData));
-                    setUser(userData);
-                })
-                .catch(() => {
-                    // No valid session/cookie
-                    sessionStorage.removeItem('zeno_user');
-                    setUser(null);
-                })
-                .finally(() => setLoading(false));
-        } else {
-            setLoading(false);
-        }
-    }, []);
+    if (localStorage.getItem(LOGOUT_FLAG_KEY)) {
+        // just logged out — don't restore
+        setLoading(false);
+        return;
+    }
+    if (!user && loading) {
+        getMe()
+            .then(res => {
+                const userData = res.data.data || res.data;
+                sessionStorage.setItem('zeno_user', JSON.stringify(userData));
+                setUser(userData);
+            })
+            .catch(() => {
+                sessionStorage.removeItem('zeno_user');
+                setUser(null);
+            })
+            .finally(() => setLoading(false));
+    } else {
+        setLoading(false);
+    }
+}, []);
 
     // When the window/tab regains focus, verify session with backend.
     // This detects logouts performed in other apps (cross-subdomain) where
@@ -71,36 +74,24 @@ export function AuthProvider({ children }) {
         const userData = res.data.data;
         sessionStorage.setItem('zeno_user', JSON.stringify(userData));
         setUser(userData);
+        localStorage.removeItem(LOGOUT_FLAG_KEY);
         return userData;
     }, []);
 
     const doLogout = useCallback(async () => {
-        console.log('🔴 Logout initiated');
-        
-        // Clear local state immediately
+        localStorage.setItem(LOGOUT_FLAG_KEY, '1');
         sessionStorage.removeItem('zeno_user');
         setUser(null);
-        console.log('✅ Local state cleared');
-        
-        // Signal to other tabs
+
         try {
             localStorage.setItem('sso-logout', `${Date.now()}`);
             window.dispatchEvent(new Event('sso-logout'));
-            console.log('✅ Logout signal broadcast');
-        } catch (e) {
-            console.warn('Failed to broadcast logout:', e);
-        }
-        
-        // Fire logout API call in background WITHOUT waiting
-        // When we navigate away, this request may get aborted, which is fine
-        // The key is that we've already cleared local state
-        apiLogout().catch(() => {}); // Ignore network errors
-        
-        console.log('✅ Logout request sent (fire-and-forget)');
-        
-        // Force full page reload (NOT React Router navigation)
-        // This will happen immediately, possibly before API call completes
-        console.log('🔄 Full page reload to login');
+        } catch (e) {}
+
+        try {
+            await apiLogout(); // WAIT — cookie must be cleared before redirect
+        } catch (e) {}
+
         window.location.href = '/login?logged_out=1';
     }, []);
 
