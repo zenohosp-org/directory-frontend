@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { login as apiLogin, adminLogin as apiAdminLogin, getMe, logout as apiLogout } from '../api/client';
+import { login as apiLogin, adminLogin as apiAdminLogin, getMe, logout as apiLogout, logoutFromAssets, logoutFromInventory } from '../api/client';
 
 const AuthContext = createContext(null);
 const LOGOUT_FLAG_KEY = 'sso_logout_flag';
@@ -58,6 +58,19 @@ export function AuthProvider({ children }) {
         return () => window.removeEventListener('focus', verifyOnFocus);
     }, [user]);
 
+    // Listen for cross-app logout signals (from other tabs/windows)
+    useEffect(() => {
+        const handleStorageChange = (event) => {
+            if (event.key === 'sso-logout') {
+                sessionStorage.removeItem('zeno_user');
+                setUser(null);
+                window.location.href = '/login?logged_out=1';
+            }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
+
     const doLogin = useCallback(async (email, password) => {
         // Try regular hospital login first; if that fails try super admin login
         let res;
@@ -89,7 +102,11 @@ export function AuthProvider({ children }) {
         } catch (e) {}
 
         try {
-            await apiLogout(); // WAIT — cookie must be cleared before redirect
+            await Promise.all([
+                apiLogout(),
+                logoutFromAssets(),
+                logoutFromInventory()
+            ]);
         } catch (e) {}
 
         window.location.href = '/login?logged_out=1';
