@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
-import { API_BASE_URL, googleLogin } from '../../api/client';
+import { API_BASE_URL, googleLogin, getMe } from '../../api/client';
 // import ApiDebugBar from '../../components/ApiDebugBar';
 import './Login.css';
 
@@ -38,6 +38,26 @@ export default function LoginPage() {
     const clientId = searchParams.get('client_id');
     const redirectUri = searchParams.get('redirect_uri');
     const state = searchParams.get('state');
+
+    // Check if already logged in via sso_token cookie
+    useEffect(() => {
+        if (isSSO) {
+            return; // Skip check during OAuth flow
+        }
+        
+        const checkExistingSession = async () => {
+            try {
+                await getMe();
+                // Token is valid — redirect to dashboard
+                navigate('/dashboard', { replace: true });
+            } catch (err) {
+                // No valid session, stay on login page
+                console.debug('No existing session, showing login form');
+            }
+        };
+
+        checkExistingSession();
+    }, [isSSO, navigate]);
 
     const handleChange = (e) =>
         setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
