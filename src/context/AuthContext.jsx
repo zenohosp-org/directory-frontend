@@ -15,12 +15,19 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(!user); // if user exists, don't need to load
 
     useEffect(() => {
-    if (localStorage.getItem(LOGOUT_FLAG_KEY)) {
-        // just logged out — don't restore
+    // FIXED: Only block restoration if the logout happened on THIS origin.
+    // Don't use the flag to permanently block SSO cookie-based restoration.
+    const justLoggedOut = localStorage.getItem(LOGOUT_FLAG_KEY);
+
+    if (justLoggedOut) {
+        // Clear it immediately — it should only block once, not forever
+        localStorage.removeItem(LOGOUT_FLAG_KEY);
         setLoading(false);
         return;
     }
-    if (!user && loading) {
+
+    if (!user) {
+        // Always call getMe() if no user in sessionStorage — cookie may be valid via SSO
         getMe()
             .then(res => {
                 const userData = res.data.data || res.data;
@@ -92,25 +99,27 @@ export function AuthProvider({ children }) {
     }, []);
 
     const doLogout = useCallback(async () => {
-        localStorage.setItem(LOGOUT_FLAG_KEY, '1');
-        sessionStorage.removeItem('zeno_user');
-        setUser(null);
+    // REMOVED: localStorage.setItem(LOGOUT_FLAG_KEY, '1');
+    // The flag caused SSO sessions to be silently blocked.
+    // Cross-app logout is handled by the sso-logout storage event below.
+    sessionStorage.removeItem('zeno_user');
+    setUser(null);
 
-        try {
-            localStorage.setItem('sso-logout', `${Date.now()}`);
-            window.dispatchEvent(new Event('sso-logout'));
-        } catch (e) {}
+    try {
+        localStorage.setItem('sso-logout', `${Date.now()}`);
+        window.dispatchEvent(new Event('sso-logout'));
+    } catch (e) {}
 
-        try {
-            await Promise.all([
-                apiLogout(),
-                logoutFromAssets(),
-                logoutFromInventory()
-            ]);
-        } catch (e) {}
+    try {
+        await Promise.all([
+            apiLogout(),
+            logoutFromAssets(),
+            logoutFromInventory()
+        ]);
+    } catch (e) {}
 
-        window.location.href = '/login?logged_out=1';
-    }, []);
+    window.location.href = '/login?logged_out=1';
+}, []);
 
     const isSuperAdmin = user?.role?.toLowerCase() === 'super_admin';
     const isHospitalAdmin = user?.role?.toLowerCase() === 'hospital_admin';
