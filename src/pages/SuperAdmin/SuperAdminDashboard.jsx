@@ -40,12 +40,16 @@ export default function SuperAdminDashboard() {
     const [hospitals, setHospitals] = useState([]);
     const [modules, setModules] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         Promise.all([getAllHospitals(), getAllModules()])
             .then(([hRes, mRes]) => {
                 setHospitals(hRes.data.data ?? []);
                 setModules(mRes.data.data ?? []);
+            })
+            .catch(err => {
+                setError(err?.response?.data?.message || 'Failed to load dashboard data');
             })
             .finally(() => setLoading(false));
     }, []);
@@ -64,6 +68,12 @@ export default function SuperAdminDashboard() {
                     <p className="page-sub">Welcome back, {user?.firstName}. Here's the platform overview.</p>
                 </div>
             </div>
+
+            {error && (
+                <div style={{ padding: '12px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '4px', marginBottom: '16px' }}>
+                    {error}
+                </div>
+            )}
 
             {loading ? (
                 <div className="loading-state">Loading...</div>

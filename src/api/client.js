@@ -1,28 +1,26 @@
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? '',
-  withCredentials: true,
-});
+export const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL;
 
-// ── Request interceptor: attach JWT from sessionStorage on every call ──
-api.interceptors.request.use((config) => {
-  try {
-    const stored = sessionStorage.getItem('zeno_user');
-    if (stored) {
-      const user = JSON.parse(stored);
-      if (user?.token) {
-        config.headers['Authorization'] = `Bearer ${user.token}`;
-      }
-    }
-  } catch (_) { }
-  return config;
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
 });
 
 // ── Auth ──
 export const login = (data) => api.post('/api/auth/login', data);
 export const adminLogin = (data) => api.post('/api/auth/admin/login', data);
+export const googleLogin = (data) => api.post('/api/auth/google', data);
+export const getMe = () => api.get('/api/auth/me');
 export const logout = () => api.post('/api/auth/logout');
+export const logoutFromAssets = () => axios.post(
+    `${import.meta.env.VITE_ASSET_API_URL}/api/auth/logout`, {},
+    { withCredentials: true }
+);
+export const logoutFromInventory = () => axios.post(
+    `${import.meta.env.VITE_INVENTORY_API_URL}/api/auth/logout`, {},
+    { withCredentials: true }
+);
 
 // ── Directory (public) ──
 export const getHospitals = () => api.get('/api/directory/hospitals');

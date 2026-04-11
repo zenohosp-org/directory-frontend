@@ -9,12 +9,12 @@ export default defineConfig({
       // All /api requests are forwarded to the Spring Boot backend.
       // The browser never makes a cross-origin call — CORS is a non-issue in dev.
       '/api': {
-        target: 'http://localhost:9000',
+        target: 'https://api-directory.zenohosp.com',
         changeOrigin: true,
         secure: false,
       },
       '/oauth2': {
-        target: 'http://localhost:9000',
+        target: 'https://api-directory.zenohosp.com',
         changeOrigin: true,
         secure: false,
       },

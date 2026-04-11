@@ -2,7 +2,27 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL, googleLogin, getMe } from '../../api/client';
+// import ApiDebugBar from '../../components/ApiDebugBar';
 import './Login.css';
+
+// Helper to create and submit form for OAuth flow
+const submitOAuth2Form = (action, fields) => {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = action;
+
+    Object.entries(fields).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value || '';
+        form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+};
 
 export default function LoginPage() {
     const { doLogin } = useAuth();
@@ -10,7 +30,7 @@ export default function LoginPage() {
     const [searchParams] = useSearchParams();
 
     const [form, setForm] = useState({ email: '', password: '' });
-    const [error, setError] = useState('');
+    const [error, setError] = useState(() => searchParams.get('error') || '');
     const [loading, setLoading] = useState(false);
 
     // OAuth SSO Parameters
@@ -19,11 +39,25 @@ export default function LoginPage() {
     const redirectUri = searchParams.get('redirect_uri');
     const state = searchParams.get('state');
 
+    // Check if already logged in via sso_token cookie
     useEffect(() => {
-        if (searchParams.has('error')) {
-            setError(searchParams.get('error'));
+        if (isSSO) {
+            return; // Skip check during OAuth flow
         }
-    }, [searchParams]);
+        
+        const checkExistingSession = async () => {
+            try {
+                await getMe();
+                // Token is valid — redirect to dashboard
+                navigate('/dashboard', { replace: true });
+            } catch (err) {
+                // No valid session, stay on login page
+                console.debug('No existing session, showing login form');
+            }
+        };
+
+        checkExistingSession();
+    }, [isSSO, navigate]);
 
     const handleChange = (e) =>
         setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -32,33 +66,18 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
         setLoading(true);
-
         if (isSSO) {
-            // Standard form submission to the backend endpoint for SSO
-            const formObj = document.createElement('form');
-            formObj.method = 'POST';
-            formObj.action = '/oauth2/login';
-
-            const addField = (name, value) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = name;
-                input.value = value || '';
-                formObj.appendChild(input);
-            };
-
-            addField('email', form.email);
-            addField('password', form.password);
-            addField('client_id', clientId);
-            addField('redirect_uri', redirectUri);
-            addField('state', state);
-
-            document.body.appendChild(formObj);
-            formObj.submit();
+            submitOAuth2Form(`${API_BASE_URL}/oauth2/login`, {
+                email: form.email,
+                password: form.password,
+                client_id: clientId,
+                redirect_uri: redirectUri,
+                state: state || '',
+            });
         } else {
             // Standard Direct Login
             try {
-                const user = await doLogin(form.email, form.password);
+                await doLogin(form.email, form.password);
                 navigate('/dashboard');
             } catch (err) {
                 setError(
@@ -74,40 +93,32 @@ export default function LoginPage() {
         setError('');
 
         if (isSSO) {
-            const formObj = document.createElement('form');
-            formObj.method = 'POST';
-            formObj.action = '/oauth2/google';
-
-            const addField = (name, value) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = name;
-                input.value = value || '';
-                formObj.appendChild(input);
-            };
-
-            addField('idToken', credentialResponse.credential);
-            addField('client_id', clientId);
-            addField('redirect_uri', redirectUri);
-            addField('state', state);
-
-            document.body.appendChild(formObj);
-            formObj.submit();
+            submitOAuth2Form(`${API_BASE_URL}/oauth2/google`, {
+                idToken: credentialResponse.credential,
+                client_id: clientId,
+                redirect_uri: redirectUri,
+                state: state || '',
+            });
         } else {
-            // Basic fallback for direct Google login
+            // Direct Google login
             try {
-                const res = await fetch('/api/auth/google', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken: credentialResponse.credential })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message || 'Google Auth failed');
+                const res = await googleLogin({ idToken: credentialResponse.credential });
+                const data = res.data;
 
-                sessionStorage.setItem('zeno_user', JSON.stringify(data.data.user || data.data));
+                const userData = data.data.user || data.data;
+                const { token: _TOKEN, ...userWithoutToken } = userData || {};
+                sessionStorage.setItem('zeno_user', JSON.stringify(userWithoutToken));
                 window.location.href = '/dashboard';
             } catch (err) {
-                setError(err.message);
+                let errorMsg = 'Google authentication failed';
+                if (err?.response?.status === 404) {
+                    errorMsg = 'API endpoint not found. Check backend connection.';
+                } else if (err?.response?.data?.message) {
+                    errorMsg = err.response.data.message;
+                } else if (err?.message) {
+                    errorMsg = err.message;
+                }
+                setError(errorMsg);
                 setLoading(false);
             }
         }
@@ -115,6 +126,7 @@ export default function LoginPage() {
 
     return (
         <div className="login-page">
+            {/* <ApiDebugBar /> */}
             <div className="login-card">
                 {/* Brand */}
                 <div className="login-brand">
@@ -148,7 +160,6 @@ export default function LoginPage() {
                             onChange={handleChange}
                         />
                     </div>
-
                     <div className="form-group">
                         <label htmlFor="password" className="form-label">Password</label>
                         <input

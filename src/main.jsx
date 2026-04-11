@@ -4,7 +4,11 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import './index.css'
 import App from './App.jsx'
 
-const GOOGLE_CLIENT_ID = '966447659179-60kfh1q0ls42l0kkugbi1i5ceqd5t4to.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+
+if (!GOOGLE_CLIENT_ID) {
+  throw new Error('Missing VITE_GOOGLE_CLIENT_ID environment variable. Please check your .env.local file.')
+}
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
