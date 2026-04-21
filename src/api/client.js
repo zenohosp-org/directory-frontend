@@ -21,6 +21,10 @@ export const logoutFromInventory = () => axios.post(
     `${import.meta.env.VITE_INVENTORY_API_URL}/api/auth/logout`, {},
     { withCredentials: true }
 );
+export const logoutFromHms = () => axios.post(
+    `${import.meta.env.VITE_HMS_API_URL}/api/auth/logout`, {},
+    { withCredentials: true }
+);
 
 // ── Directory (public) ──
 export const getHospitals = () => api.get('/api/directory/hospitals');

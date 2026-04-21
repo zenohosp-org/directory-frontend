@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { login as apiLogin, adminLogin as apiAdminLogin, getMe, logout as apiLogout, logoutFromAssets, logoutFromInventory } from '../api/client';
+import { login as apiLogin, adminLogin as apiAdminLogin, getMe, logout as apiLogout, logoutFromAssets, logoutFromInventory, logoutFromHms } from '../api/client';
 
 const AuthContext = createContext(null);
 const LOGOUT_FLAG_KEY = 'sso_logout_flag';
@@ -95,7 +95,8 @@ export function AuthProvider({ children }) {
             await Promise.all([
                 apiLogout(),
                 logoutFromAssets(),
-                logoutFromInventory()
+                logoutFromInventory(),
+                logoutFromHms(),
             ]);
         } catch (e) {}
 
