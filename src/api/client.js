@@ -13,22 +13,13 @@ export const adminLogin = (data) => api.post('/api/auth/admin/login', data);
 export const googleLogin = (data) => api.post('/api/auth/google', data);
 export const getMe = () => api.get('/api/auth/me');
 export const logout = () => api.post('/api/auth/logout');
-export const logoutFromAssets = () => axios.post(
-    `${import.meta.env.VITE_ASSET_API_URL}/api/auth/logout`, {},
-    { withCredentials: true }
-);
-export const logoutFromInventory = () => axios.post(
-    `${import.meta.env.VITE_INVENTORY_API_URL}/api/auth/logout`, {},
-    { withCredentials: true }
-);
-export const logoutFromHms = () => axios.post(
-    `${import.meta.env.VITE_HMS_API_URL}/api/auth/logout`, {},
-    { withCredentials: true }
-);
-export const logoutFromFinance = () => axios.post(
-    `${import.meta.env.VITE_FINANCE_API_URL}/api/auth/logout`, {},
-    { withCredentials: true }
-);
+const crossOriginLogout = (url) =>
+    fetch(url, { method: 'POST', credentials: 'include', mode: 'no-cors' });
+
+export const logoutFromAssets    = () => crossOriginLogout(`${import.meta.env.VITE_ASSET_API_URL}/api/auth/logout`);
+export const logoutFromInventory = () => crossOriginLogout(`${import.meta.env.VITE_INVENTORY_API_URL}/api/auth/logout`);
+export const logoutFromHms       = () => crossOriginLogout(`${import.meta.env.VITE_HMS_API_URL}/api/auth/logout`);
+export const logoutFromFinance   = () => crossOriginLogout(`${import.meta.env.VITE_FINANCE_API_URL}/api/auth/logout`);
 
 // ── Directory (public) ──
 export const getHospitals = () => api.get('/api/directory/hospitals');
