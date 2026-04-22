@@ -86,12 +86,15 @@ export function AuthProvider({ children }) {
         sessionStorage.removeItem('zeno_user');
         setUser(null);
 
-        try { localStorage.setItem('sso-logout', `${Date.now()}`); } catch (e) {}
+        try {
+            localStorage.setItem('sso-logout', `${Date.now()}`);
+        } catch (e) {}
 
         await Promise.allSettled([
             apiLogout(),
             logoutFromAssets(),
             logoutFromInventory(),
+            logoutFromHms(),
             logoutFromFinance()
         ]);
 
