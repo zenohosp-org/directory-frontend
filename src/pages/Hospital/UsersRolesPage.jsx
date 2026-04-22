@@ -121,9 +121,9 @@ export default function UsersRolesPage() {
     return (
         <div className="users-roles-page">
             <div className="page-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="page-header-left">
                     {urlHospitalId && (
-                        <button className="btn-secondary" onClick={() => navigate(`/hospitals/${urlHospitalId}`)} style={{ padding: '0.5rem', minWidth: 0 }}>
+                        <button className="btn-back btn-secondary" onClick={() => navigate(`/hospitals/${urlHospitalId}`)}>
                             ←
                         </button>
                     )}
@@ -246,7 +246,7 @@ export default function UsersRolesPage() {
                         </div>
                         <form onSubmit={handleUpdateModules}>
                             <div className="modal-body">
-                                <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1.5rem' }}>
+                                <p className="module-override-hint">
                                     Override default role permissions for this specific user.
                                 </p>
                                 <div className="module-access-grid">
