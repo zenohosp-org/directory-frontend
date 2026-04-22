@@ -86,19 +86,14 @@ export function AuthProvider({ children }) {
         sessionStorage.removeItem('zeno_user');
         setUser(null);
 
-        try {
-            localStorage.setItem('sso-logout', `${Date.now()}`);
-            window.dispatchEvent(new Event('sso-logout'));
-        } catch (e) {}
+        try { localStorage.setItem('sso-logout', `${Date.now()}`); } catch (e) {}
 
-        try {
-            await Promise.all([
-                apiLogout(),
-                logoutFromAssets(),
-                logoutFromInventory(),
-                logoutFromFinance()
-            ]);
-        } catch (e) {}
+        await Promise.allSettled([
+            apiLogout(),
+            logoutFromAssets(),
+            logoutFromInventory(),
+            logoutFromFinance()
+        ]);
 
         window.location.href = '/login?logged_out=1';
     }, []);
