@@ -63,10 +63,8 @@ export default function UsersRolesPage() {
     const handleSaveUser = async (formData) => {
         try {
             if (editingUser) {
-                // TODO: Enable user update when backend endpoint is implemented
-                // await api.put(`/api/admin/users/${editingUser.id}${queryParams}`, formData);
-                alert('User update functionality is not yet available. Coming soon!');
-                return;
+                await api.put(`/api/admin/users/${editingUser.id}${queryParams}`, formData);
+                alert('User updated successfully');
             } else {
                 await api.post(`/api/admin/users${queryParams}`, formData);
                 alert('User created successfully');
