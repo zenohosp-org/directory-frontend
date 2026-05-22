@@ -20,7 +20,8 @@ export default function HospitalsListPage() {
         (h) =>
             h.name.toLowerCase().includes(search.toLowerCase()) ||
             h.city?.toLowerCase().includes(search.toLowerCase()) ||
-            h.code?.toLowerCase().includes(search.toLowerCase())
+            h.code?.toLowerCase().includes(search.toLowerCase()) ||
+            h.numericCode?.includes(search)
     );
 
     return (
@@ -56,6 +57,7 @@ export default function HospitalsListPage() {
                             <tr>
                                 <th className="th">Hospital</th>
                                 <th className="th">Code</th>
+                                <th className="th">Code #</th>
                                 <th className="th">Location</th>
                                 <th className="th">Plan</th>
                                 <th className="th">Active Modules</th>
@@ -74,6 +76,7 @@ export default function HospitalsListPage() {
                                         <div className="td--muted">{h.email}</div>
                                     </td>
                                     <td className="td"><span className="code-tag">{h.code}</span></td>
+                                    <td className="td"><span className="code-tag">{h.numericCode ?? '—'}</span></td>
                                     <td className="td">{h.city}, {h.state}</td>
                                     <td className="td">
                                         <span className="badge badge--plan">{h.subscriptionPlan ?? '—'}</span>
@@ -90,7 +93,7 @@ export default function HospitalsListPage() {
                             ))}
                             {filtered.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="td empty-state">
+                                    <td colSpan={7} className="td empty-state">
                                         {search ? 'No hospitals match your search.' : 'No hospitals yet.'}
                                     </td>
                                 </tr>
